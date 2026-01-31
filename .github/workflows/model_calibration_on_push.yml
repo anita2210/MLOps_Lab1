@@ -1,0 +1,52 @@
+name: Model Calibration
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'lab2/**'
+  workflow_dispatch:
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install scikit-learn joblib
+
+    - name: Train Model First
+      run: |
+        python lab2/src/train_model.py
+
+    - name: Calibrate Model
+      run: |
+        python lab2/src/calibrate_model.py
+
+    - name: Generate Timestamp
+      run: |
+        echo "TIMESTAMP=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
+
+    - name: Upload Calibrated Model Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: calibrated-model-${{ env.TIMESTAMP }}
+        path: lab2/models/
+
+    - name: Notify on Success
+      if: success()
+      run: echo "Model calibration completed successfully!"
+
+    - name: Notify on Failure
+      if: failure()
+      run: echo "Model calibration failed!"

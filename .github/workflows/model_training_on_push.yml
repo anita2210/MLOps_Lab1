@@ -1,0 +1,58 @@
+name: Model Training and Evaluation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'lab2/**'
+  workflow_dispatch:
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install scikit-learn joblib
+
+    - name: Generate Timestamp
+      run: |
+        echo "TIMESTAMP=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
+
+    - name: Train Model
+      run: |
+        python lab2/src/train_model.py
+
+    - name: Evaluate Model
+      run: |
+        python lab2/src/evaluate_model.py
+
+    - name: Upload Model Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: trained-model-${{ env.TIMESTAMP }}
+        path: lab2/models/
+
+    - name: Upload Metrics Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-metrics-${{ env.TIMESTAMP }}
+        path: lab2/metrics/
+
+    - name: Notify on Success
+      if: success()
+      run: echo "Model training and evaluation completed successfully!"
+
+    - name: Notify on Failure
+      if: failure()
+      run: echo "Model training or evaluation failed!"
